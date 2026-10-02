@@ -158,13 +158,31 @@ const checkDatabase = async () => {
       }
     }
 
-    // Ensure roll_number column in students
+    // Automatic column migration for older schemas
     try {
-      const [studentCols] = await conn.query('SHOW COLUMNS FROM students LIKE "roll_number"');
-      if (studentCols.length === 0) {
-        await conn.query('ALTER TABLE students ADD COLUMN roll_number VARCHAR(50) NULL AFTER name');
-      }
-    } catch (e) {}
+      const ensureColumn = async (table, column, definition) => {
+        try {
+          const [cols] = await conn.query(`SHOW COLUMNS FROM \`${table}\` LIKE ?`, [column]);
+          if (cols.length === 0) {
+            await conn.query(`ALTER TABLE \`${table}\` ADD COLUMN \`${column}\` ${definition}`);
+            console.log(`🔧 Auto-migrated table \`${table}\`: added column \`${column}\``);
+          }
+        } catch (colErr) {}
+      };
+
+      await ensureColumn('students', 'roll_number', 'VARCHAR(50) NULL AFTER `name`');
+      await ensureColumn('students', 'parent_name', 'VARCHAR(255) NULL AFTER `section_id`');
+      await ensureColumn('students', 'whatsapp_number', 'VARCHAR(50) NULL AFTER `parent_name`');
+      await ensureColumn('students', 'created_by', 'INT NULL');
+      await ensureColumn('students', 'is_active', 'TINYINT(1) NOT NULL DEFAULT 1');
+      await ensureColumn('admin_classes', 'section_id', 'INT NULL AFTER `class_id`');
+      await ensureColumn('tests', 'is_final', 'TINYINT(1) NOT NULL DEFAULT 0');
+      await ensureColumn('test_marks', 'is_final', 'TINYINT(1) NOT NULL DEFAULT 0');
+      await ensureColumn('attendance', 'marked_by', 'INT NULL');
+      await ensureColumn('behaviour', 'admin_id', 'INT NULL');
+    } catch (e) {
+      console.warn('Auto-migration warning:', e.message);
+    }
 
     // Ensure superadmin in MySQL
     const [allUsers] = await conn.query('SELECT COUNT(*) AS count FROM users WHERE role = "super_admin" AND is_active = 1');
