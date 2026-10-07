@@ -1,7 +1,7 @@
 -- ====================================================================
--- School Management Application Database Schema
--- Compatible with MySQL 5.7+, MySQL 8.0+, MariaDB, and phpMyAdmin
--- Hostinger VPS & Remote Database Ready
+-- STREAMLINED SCHOOL MANAGEMENT SYSTEM DATABASE SCHEMA
+-- Perfectly aligned 1-to-1 with Frontend UI Components
+-- Compatible with MySQL 5.7+, MySQL 8.0+, MariaDB & phpMyAdmin
 -- ====================================================================
 
 SET FOREIGN_KEY_CHECKS = 0;
@@ -9,34 +9,35 @@ SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
 
 -- --------------------------------------------------------
--- Table: users
+-- 1. Table: users (Auth & Role Profiles)
 -- --------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `users` (
+DROP TABLE IF EXISTS `users`;
+CREATE TABLE `users` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `username` VARCHAR(191) NOT NULL UNIQUE,
   `password_hash` VARCHAR(255) NOT NULL,
   `role` VARCHAR(50) NOT NULL DEFAULT 'student',
   `full_name` VARCHAR(255) NOT NULL,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `created_by` INT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  INDEX `idx_users_role` (`role`),
-  INDEX `idx_users_active` (`is_active`)
+  INDEX `idx_users_role` (`role`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
--- Table: classes
+-- 2. Table: classes (Academic Grades)
 -- --------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `classes` (
+DROP TABLE IF EXISTS `classes`;
+CREATE TABLE `classes` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `name` VARCHAR(100) NOT NULL UNIQUE,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
--- Table: sections
+-- 3. Table: sections (Class Sections)
 -- --------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `sections` (
+DROP TABLE IF EXISTS `sections`;
+CREATE TABLE `sections` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `name` VARCHAR(50) NOT NULL,
   `class_id` INT NOT NULL,
@@ -46,9 +47,10 @@ CREATE TABLE IF NOT EXISTS `sections` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
--- Table: admin_classes
+-- 4. Table: admin_classes (Class Admin Assignments)
 -- --------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `admin_classes` (
+DROP TABLE IF EXISTS `admin_classes`;
+CREATE TABLE `admin_classes` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `admin_id` INT NOT NULL,
   `class_id` INT NOT NULL,
@@ -60,61 +62,54 @@ CREATE TABLE IF NOT EXISTS `admin_classes` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
--- Table: students
+-- 5. Table: students (Student Records)
 -- --------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `students` (
+DROP TABLE IF EXISTS `students`;
+CREATE TABLE `students` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `student_uid` VARCHAR(191) NOT NULL,
   `name` VARCHAR(255) NOT NULL,
   `roll_number` VARCHAR(50) NULL,
   `class_id` INT NULL,
   `section_id` INT NULL,
-  `parent_name` VARCHAR(255) NULL,
-  `whatsapp_number` VARCHAR(50) NULL,
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
-  `created_by` INT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX `idx_students_uid` (`student_uid`),
-  INDEX `idx_students_class_sec` (`class_id`, `section_id`),
-  INDEX `idx_students_active` (`is_active`),
   CONSTRAINT `fk_students_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `fk_students_section` FOREIGN KEY (`section_id`) REFERENCES `sections` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
--- Table: subjects
+-- 6. Table: subjects (Academic Subjects)
 -- --------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `subjects` (
+DROP TABLE IF EXISTS `subjects`;
+CREATE TABLE `subjects` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `name` VARCHAR(100) NOT NULL,
   `class_id` INT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  INDEX `idx_subjects_class` (`class_id`),
   CONSTRAINT `fk_subjects_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
--- Table: attendance
+-- 7. Table: attendance (Daily Attendance)
 -- --------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `attendance` (
+DROP TABLE IF EXISTS `attendance`;
+CREATE TABLE `attendance` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `student_id` INT NOT NULL,
   `date` DATE NOT NULL,
   `status` VARCHAR(50) NOT NULL DEFAULT 'Present',
-  `marked_by` INT NULL,
-  `modified_by` INT NULL,
-  `is_locked` TINYINT(1) NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY `unique_student_date` (`student_id`, `date`),
-  INDEX `idx_attendance_date` (`date`),
   CONSTRAINT `fk_attendance_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
--- Table: homework
+-- 8. Table: homework (Homework & Assignments)
 -- --------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `homework` (
+DROP TABLE IF EXISTS `homework`;
+CREATE TABLE `homework` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `class_id` INT NOT NULL,
   `subject_id` INT NOT NULL,
@@ -123,106 +118,77 @@ CREATE TABLE IF NOT EXISTS `homework` (
   `due_date` DATE NOT NULL,
   `created_by` INT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  INDEX `idx_homework_class` (`class_id`),
   CONSTRAINT `fk_homework_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_homework_subject` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
--- Table: tests
+-- 9. Table: tests (Tests & Examinations)
 -- --------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `tests` (
+DROP TABLE IF EXISTS `tests`;
+CREATE TABLE `tests` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `name` VARCHAR(255) NOT NULL,
   `date` DATE NOT NULL,
   `class_id` INT NOT NULL,
   `subject_id` INT NOT NULL,
   `created_by` INT NULL,
-  `is_final` TINYINT(1) NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  INDEX `idx_tests_class` (`class_id`),
   CONSTRAINT `fk_tests_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_tests_subject` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
--- Table: test_marks
+-- 10. Table: test_marks (Exam Scores & Marks)
 -- --------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `test_marks` (
+DROP TABLE IF EXISTS `test_marks`;
+CREATE TABLE `test_marks` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `test_id` INT NOT NULL,
   `student_id` INT NOT NULL,
-  `subject_id` INT NULL,
   `marks_obtained` FLOAT NULL,
   `max_marks` FLOAT NOT NULL DEFAULT 100,
-  `is_final` TINYINT(1) NOT NULL DEFAULT 0,
-  `entered_by` INT NULL,
   `entered_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY `unique_test_student` (`test_id`, `student_id`),
-  INDEX `idx_marks_student` (`student_id`),
   CONSTRAINT `fk_marks_test` FOREIGN KEY (`test_id`) REFERENCES `tests` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `fk_marks_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
--- Table: behaviour
+-- 11. Table: behaviour (Student Discipline & Ratings)
 -- --------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `behaviour` (
+DROP TABLE IF EXISTS `behaviour`;
+CREATE TABLE `behaviour` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `student_id` INT NOT NULL,
   `rating` INT NOT NULL DEFAULT 5,
   `remarks` TEXT NOT NULL,
   `date` DATE NOT NULL,
-  `admin_id` INT NULL,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  INDEX `idx_behaviour_student` (`student_id`),
   CONSTRAINT `fk_behaviour_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
--- Table: whatsapp_logs
+-- 12. Table: whatsapp_logs (WhatsApp Alerts & Logs)
 -- --------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `whatsapp_logs` (
+DROP TABLE IF EXISTS `whatsapp_logs`;
+CREATE TABLE `whatsapp_logs` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `student_id` INT NULL,
-  `message_type` VARCHAR(100) NOT NULL,
   `message_body` TEXT NOT NULL,
-  `whatsapp_number` VARCHAR(50) NULL,
   `status` VARCHAR(50) NOT NULL DEFAULT 'sent',
-  `sent_by` INT NULL,
-  `sent_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `api_response` TEXT NULL,
-  INDEX `idx_whatsapp_status` (`status`)
+  `sent_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
--- Table: audit_logs
+-- 13. Table: settings (School Configuration)
 -- --------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `audit_logs` (
+DROP TABLE IF EXISTS `settings`;
+CREATE TABLE `settings` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `user_id` INT NULL,
-  `action` VARCHAR(100) NOT NULL,
-  `module` VARCHAR(100) NOT NULL,
-  `record_id` INT NULL,
-  `old_value` TEXT NULL,
-  `new_value` TEXT NULL,
-  `ip_address` VARCHAR(50) NULL,
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
--- Table: settings
--- --------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `settings` (
-  `id` INT AUTO_INCREMENT PRIMARY KEY,
-  `whatsapp_api_key` VARCHAR(255) NOT NULL DEFAULT 'twi_live_98ab42c8d23e5904',
-  `jwt_secret` VARCHAR(255) NOT NULL DEFAULT 'your_super_secret_key',
   `school_name` VARCHAR(255) NOT NULL DEFAULT 'Dyzen International School',
   `academic_year` VARCHAR(100) NOT NULL DEFAULT '2026-2027',
-  `report_cards_released` TINYINT(1) NOT NULL DEFAULT 0,
-  `last_backup` VARCHAR(100) NULL,
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `whatsapp_api_key` VARCHAR(255) NOT NULL DEFAULT '',
+  `jwt_secret` VARCHAR(255) NOT NULL DEFAULT 'super_secret_jwt_school_production_key_2026'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ========================================================
@@ -230,63 +196,34 @@ CREATE TABLE IF NOT EXISTS `settings` (
 -- ========================================================
 
 -- 1. Default Super Admin (Email: superadmin@school.edu | Password: password123)
--- Bcrypt Hash for "password123": $2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi
-INSERT IGNORE INTO `users` (`id`, `username`, `password_hash`, `role`, `full_name`, `is_active`, `created_at`)
-VALUES (1, 'superadmin@school.edu', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'super_admin', 'Super Administrator', 1, NOW());
-
--- Also add superadmin@school.com for compatibility
-INSERT IGNORE INTO `users` (`id`, `username`, `password_hash`, `role`, `full_name`, `is_active`, `created_at`)
-VALUES (2, 'superadmin@school.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'super_admin', 'Super Administrator', 1, NOW());
+INSERT INTO `users` (`id`, `username`, `password_hash`, `role`, `full_name`, `is_active`)
+VALUES 
+(1, 'superadmin@school.edu', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'super_admin', 'Super Administrator', 1),
+(2, 'superadmin@school.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'super_admin', 'Super Administrator', 1);
 
 -- 2. Seed Default Classes
-INSERT IGNORE INTO `classes` (`id`, `name`) VALUES
-(1, 'LKG'),
-(2, 'UKG'),
-(3, 'Class 1'),
-(4, 'Class 2'),
-(5, 'Class 3'),
-(6, 'Class 4'),
-(7, 'Class 5'),
-(8, 'Class 6'),
-(9, 'Class 7'),
-(10, 'Class 8'),
-(11, 'Class 9'),
-(12, 'Class 10'),
-(13, 'Class 11'),
-(14, 'Class 12');
+INSERT INTO `classes` (`id`, `name`) VALUES
+(1, 'Class 1'), (2, 'Class 2'), (3, 'Class 3'), (4, 'Class 4'), (5, 'Class 5'),
+(6, 'Class 6'), (7, 'Class 7'), (8, 'Class 8'), (9, 'Class 9'), (10, 'Class 10'),
+(11, 'Class 11'), (12, 'Class 12');
 
--- Also seed short names (1-12) for flexible dropdown selections
-INSERT IGNORE INTO `classes` (`name`) VALUES
-('1'), ('2'), ('3'), ('4'), ('5'), ('6'), ('7'), ('8'), ('9'), ('10'), ('11'), ('12');
-
--- 3. Seed Default Sections (A, B, C, D) for all classes
-INSERT IGNORE INTO `sections` (`name`, `class_id`)
-SELECT 'A', `id` FROM `classes`
-UNION ALL
-SELECT 'B', `id` FROM `classes`
-UNION ALL
-SELECT 'C', `id` FROM `classes`
-UNION ALL
-SELECT 'D', `id` FROM `classes`;
+-- 3. Seed Default Sections (A, B, C, D for each class)
+INSERT INTO `sections` (`class_id`, `name`) VALUES
+(1, 'A'), (1, 'B'), (2, 'A'), (2, 'B'), (3, 'A'), (3, 'B'),
+(4, 'A'), (4, 'B'), (5, 'A'), (5, 'B'), (6, 'A'), (6, 'B'),
+(7, 'A'), (7, 'B'), (8, 'A'), (8, 'B'), (9, 'A'), (9, 'B'),
+(10, 'A'), (10, 'B'), (11, 'A'), (11, 'B'), (12, 'A'), (12, 'B');
 
 -- 4. Seed Standard Subjects
-INSERT IGNORE INTO `subjects` (`name`, `class_id`)
-SELECT 'Mathematics', `id` FROM `classes` WHERE `name` = 'Class 8'
-UNION ALL
-SELECT 'Science', `id` FROM `classes` WHERE `name` = 'Class 8'
-UNION ALL
-SELECT 'English', `id` FROM `classes` WHERE `name` = 'Class 8'
-UNION ALL
-SELECT 'Social Studies', `id` FROM `classes` WHERE `name` = 'Class 8'
-UNION ALL
-SELECT 'Mathematics', `id` FROM `classes` WHERE `name` = 'Class 10'
-UNION ALL
-SELECT 'Physics', `id` FROM `classes` WHERE `name` = 'Class 10'
-UNION ALL
-SELECT 'Chemistry', `id` FROM `classes` WHERE `name` = 'Class 10';
+INSERT INTO `subjects` (`name`, `class_id`) VALUES
+('Mathematics', 8), ('Science', 8), ('English', 8), ('Social Science', 8),
+('Mathematics', 9), ('Physics', 9), ('Chemistry', 9), ('Biology', 9), ('English', 9),
+('Mathematics', 10), ('Physics', 10), ('Chemistry', 10), ('Biology', 10), ('English', 10),
+('Physics', 11), ('Chemistry', 11), ('Mathematics', 11), ('Computer Science', 11),
+('Physics', 12), ('Chemistry', 12), ('Mathematics', 12), ('Computer Science', 12);
 
--- 5. Seed System Settings
-INSERT IGNORE INTO `settings` (`id`, `whatsapp_api_key`, `jwt_secret`, `school_name`, `academic_year`, `report_cards_released`)
-VALUES (1, 'twi_live_98ab42c8d23e5904', 'your_super_secret_key', 'Dyzen International School', '2026-2027', 0);
+-- 5. Seed Default Settings
+INSERT INTO `settings` (`id`, `school_name`, `academic_year`, `whatsapp_api_key`, `jwt_secret`)
+VALUES (1, 'Dyzen International School', '2026-2027', 'twi_live_key', 'super_secret_jwt_school_production_key_2026');
 
 SET FOREIGN_KEY_CHECKS = 1;
