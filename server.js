@@ -438,10 +438,23 @@ app.post('/api/users/add', authenticateToken, async (req, res) => {
           return res.status(400).json({ success: false, message: 'User with this email already exists' });
         }
 
+        // Dynamic user insert
+        const [userColsRaw] = await connection.query('SHOW COLUMNS FROM users');
+        const userCols = userColsRaw.map(c => c.Field);
+        const userPayload = {
+          username: cleanEmail,
+          password_hash: passwordHash,
+          role: role,
+          full_name: name || cleanEmail,
+          is_active: 1
+        };
+        if (userCols.includes('created_by')) userPayload.created_by = req.user.id;
+
+        const uColNames = Object.keys(userPayload);
+        const uPlaceholders = uColNames.map(() => '?').join(', ');
         const [userResult] = await connection.query(
-          `INSERT INTO users (username, password_hash, role, full_name, is_active, created_by, created_at)
-           VALUES (?, ?, ?, ?, 1, ?, NOW())`,
-          [cleanEmail, passwordHash, role, name || cleanEmail, req.user.id]
+          `INSERT INTO users (${uColNames.map(c => `\`${c}\``).join(', ')}) VALUES (${uPlaceholders})`,
+          Object.values(userPayload)
         );
         newUserId = userResult.insertId;
 
@@ -469,10 +482,26 @@ app.post('/api/users/add', authenticateToken, async (req, res) => {
             }
           }
 
+          // Dynamic student insert - adapts to ANY existing schema
+          const [stuColsRaw] = await connection.query('SHOW COLUMNS FROM students');
+          const stuCols = stuColsRaw.map(c => c.Field);
+          const studentPayload = {
+            student_uid: cleanEmail,
+            name: name || cleanEmail,
+            is_active: 1
+          };
+          if (stuCols.includes('roll_number')) studentPayload.roll_number = effectiveRoll;
+          if (stuCols.includes('class_id')) studentPayload.class_id = classId;
+          if (stuCols.includes('section_id')) studentPayload.section_id = sectionId;
+          if (stuCols.includes('parent_name')) studentPayload.parent_name = parentName || 'Parent';
+          if (stuCols.includes('whatsapp_number')) studentPayload.whatsapp_number = whatsappNumber || '';
+          if (stuCols.includes('created_by')) studentPayload.created_by = req.user.id;
+
+          const sColNames = Object.keys(studentPayload);
+          const sPlaceholders = sColNames.map(() => '?').join(', ');
           const [stuRes] = await connection.query(
-            `INSERT INTO students (student_uid, name, roll_number, class_id, section_id, parent_name, whatsapp_number, is_active, created_by, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, NOW())`,
-            [cleanEmail, name || cleanEmail, effectiveRoll, classId, sectionId, parentName || 'Parent', whatsappNumber || '', req.user.id]
+            `INSERT INTO students (${sColNames.map(c => `\`${c}\``).join(', ')}) VALUES (${sPlaceholders})`,
+            Object.values(studentPayload)
           );
           newStudentId = stuRes.insertId;
         } else if (role === 'admin' && className) {
@@ -492,9 +521,19 @@ app.post('/api/users/add', authenticateToken, async (req, res) => {
             sectionId = secRes.insertId;
           }
 
+          const [adminColsRaw] = await connection.query('SHOW COLUMNS FROM admin_classes');
+          const adminCols = adminColsRaw.map(c => c.Field);
+          const adminPayload = {
+            admin_id: newUserId,
+            class_id: classId
+          };
+          if (adminCols.includes('section_id')) adminPayload.section_id = sectionId;
+
+          const aColNames = Object.keys(adminPayload);
+          const aPlaceholders = aColNames.map(() => '?').join(', ');
           await connection.query(
-            'INSERT INTO admin_classes (admin_id, class_id, section_id) VALUES (?, ?, ?)',
-            [newUserId, classId, sectionId]
+            `INSERT INTO admin_classes (${aColNames.map(c => `\`${c}\``).join(', ')}) VALUES (${aPlaceholders})`,
+            Object.values(adminPayload)
           );
         }
 
