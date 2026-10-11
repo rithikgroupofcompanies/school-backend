@@ -25,8 +25,8 @@ router.get('/status', authenticate, async (req, res) => {
 
     if (!syncRecord) {
       syncRecord = {
-        spreadsheet_id: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
-        spreadsheet_url: 'https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit',
+        spreadsheet_id: '1EOaG3KmoT1K9hYoBABKVTWZLjVB_RnExt6MQ1LLpodQ',
+        spreadsheet_url: 'https://docs.google.com/spreadsheets/d/1EOaG3KmoT1K9hYoBABKVTWZLjVB_RnExt6MQ1LLpodQ/edit?usp=sharing',
         status: 'idle',
         rows_synced: 142,
         last_synced_at: new Date().toISOString()

@@ -35,6 +35,10 @@ app.get('/api/health', (req, res) => {
 
 // Mount Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/login', (req, res, next) => {
+  req.url = '/login';
+  return authRoutes(req, res, next);
+});
 app.use('/api/schools', schoolRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/staff', staffRoutes);
@@ -46,19 +50,66 @@ app.use('/api/parent', parentRoutes);
 // Compatibility aliases for legacy frontend routes
 app.use('/api/users/add', (req, res, next) => {
   if (req.body && req.body.role === 'student') {
-    return req.app._router.handle(Object.assign(req, { url: '/admit', originalUrl: '/api/students/admit' }), res, next);
+    req.url = '/admit';
+    return studentRoutes(req, res, next);
   }
-  return req.app._router.handle(Object.assign(req, { url: '/', originalUrl: '/api/staff' }), res, next);
+  req.url = '/';
+  return staffRoutes(req, res, next);
 });
 
-app.use('/api/users', (req, res, next) => {
+app.use('/api/users', async (req, res, next) => {
   if (req.method === 'DELETE') {
-    return req.app._router.handle(Object.assign(req, { url: req.url, originalUrl: `/api/students${req.url}` }), res, next);
+    return studentRoutes(req, res, next);
   }
   if (req.query && req.query.role === 'student') {
-    return req.app._router.handle(Object.assign(req, { url: '/', originalUrl: '/api/students' }), res, next);
+    req.url = '/';
+    return studentRoutes(req, res, next);
   }
-  return req.app._router.handle(Object.assign(req, { url: '/', originalUrl: '/api/staff' }), res, next);
+  
+  const isMySql = db.isMySqlConnected();
+  const pool = db.getPool();
+  const memDb = db.getMemoryDb();
+  const schoolId = req.user ? req.user.schoolId : 1;
+
+  try {
+    let allUsers = [];
+    if (isMySql && pool) {
+      const [students] = await pool.query(
+        `SELECT s.id, s.name, s.student_uid AS email, 'student' AS role, c.name AS className, sec.name AS section, s.roll_number AS rollNumber
+         FROM students s
+         LEFT JOIN classes c ON s.class_id = c.id
+         LEFT JOIN sections sec ON s.section_id = sec.id
+         WHERE s.school_id = ?`,
+        [schoolId]
+      );
+      const [staff] = await pool.query(
+        `SELECT u.id, u.full_name AS name, u.username AS email, sm.role, sm.designation, sm.department,
+                c.name AS className, sec.name AS section
+         FROM school_memberships sm
+         JOIN users u ON sm.user_id = u.id
+         LEFT JOIN admin_classes ac ON u.id = ac.admin_id
+         LEFT JOIN classes c ON ac.class_id = c.id
+         LEFT JOIN sections sec ON ac.section_id = sec.id
+         WHERE sm.school_id = ? AND sm.is_active = 1`,
+        [schoolId]
+      );
+      allUsers = [...students, ...staff];
+    } else if (memDb) {
+      allUsers = (memDb.users || []).map(u => ({
+        id: u.id,
+        name: u.full_name || u.name,
+        email: u.username || u.email,
+        role: u.role,
+        className: u.className || (u.role === 'student' ? 'Class 10' : undefined),
+        section: u.section || (u.role === 'student' ? 'A' : undefined),
+        rollNumber: u.rollNumber || (u.role === 'student' ? '10A01' : undefined)
+      }));
+    }
+    return res.json({ success: true, users: allUsers });
+  } catch (e) {
+    req.url = '/';
+    return staffRoutes(req, res, next);
+  }
 });
 
 // Global 404 Handler

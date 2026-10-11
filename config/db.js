@@ -96,7 +96,7 @@ const loadLocalDb = () => {
       { id: 1, school_id: 1, student_id: 1, rating: 5, remarks: 'Excellent academic focus and leadership.', date: '2026-10-11', created_by: 1 }
     ],
     google_sheets_sync: [
-      { id: 1, school_id: 1, spreadsheet_id: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms', spreadsheet_url: 'https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms', sync_type: 'all', status: 'success', rows_synced: 142, last_synced_at: new Date().toISOString() }
+      { id: 1, school_id: 1, spreadsheet_id: '1EOaG3KmoT1K9hYoBABKVTWZLjVB_RnExt6MQ1LLpodQ', spreadsheet_url: 'https://docs.google.com/spreadsheets/d/1EOaG3KmoT1K9hYoBABKVTWZLjVB_RnExt6MQ1LLpodQ/edit?usp=sharing', sync_type: 'all', status: 'success', rows_synced: 142, last_synced_at: new Date().toISOString() }
     ],
     settings: {
       schoolName: 'Dyzen International School',
