@@ -205,6 +205,50 @@ const server = http.createServer((req, res) => {
       return sendJSON(200, DB.students);
     }
 
+    // 5c. CREATE NEW STUDENT (Single Admission)
+    if (pathname === '/api/v1/school/students' && req.method === 'POST') {
+      const { full_name, admission_no, class: className, section, guardian_name, guardian_email, guardian_phone } = parsedBody;
+      const schoolId = parseInt(req.headers['x-school-id']) || 1;
+      const newId = DB.students.length + 101;
+      const newRecord = {
+        id: newId,
+        school_id: schoolId,
+        admission_no: admission_no || `SCH-CHN-001/${newId}`,
+        full_name: full_name || 'Enrolled Student',
+        class: className || 'Grade 10',
+        section: section || 'Section A',
+        status: 'active',
+        guardian_name: guardian_name || 'Guardian',
+        guardian_email: guardian_email || '',
+        guardian_phone: guardian_phone || '',
+        attendance_pct: 100,
+        attendanceToday: 'present',
+        term_gpa: 'Enrolled',
+        last_report_sent: null
+      };
+      DB.students.push(newRecord);
+      DB.audit_logs.unshift({
+        id: DB.audit_logs.length + 1,
+        action: 'student.admitted_single',
+        actor: 'Staff Admission Office',
+        email: guardian_email || 'admission@school.com',
+        created_at: new Date().toISOString()
+      });
+      return sendJSON(201, { success: true, message: 'Student admitted successfully', student: newRecord });
+    }
+
+    // 5d. UPDATE STUDENT ATTENDANCE STATUS
+    if (pathname.startsWith('/api/v1/school/students/') && pathname.endsWith('/attendance') && req.method === 'PUT') {
+      const parts = pathname.split('/');
+      const studentId = parseInt(parts[5]);
+      const student = DB.students.find(s => s.id === studentId);
+      if (!student) {
+        return sendJSON(404, { message: 'Student record not found.' });
+      }
+      student.attendanceToday = parsedBody.status || 'present';
+      return sendJSON(200, { success: true, message: 'Attendance updated', student });
+    }
+
     // 5b. BULK INGEST STUDENTS (From CSV / Google Sheets)
     if (pathname === '/api/v1/school/students/bulk' && req.method === 'POST') {
       const incoming = parsedBody?.students || [];
