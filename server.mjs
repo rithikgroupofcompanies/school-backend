@@ -92,8 +92,8 @@ const DB = {
     { id: 4, school_id: 1, employee_id: 'EMP-CHN-014', name: 'Mr. M. Anand, M.A.', subject: 'English', phone: '+91 98404 56789', sections: ['Grade 10 - Section A'] },
   ],
   audit_logs: [
-    { id: 1, action: 'auth.login_success', actor: 'Super Administrator', email: 'superadmin@rithikgroup.com', created_at: new Date().toISOString() },
-    { id: 2, action: 'school.approved_and_provisioned', actor: 'Super Administrator', email: 'superadmin@rithikgroup.com', created_at: new Date().toISOString() },
+    { id: 1, action: 'auth.login_success', actor: 'Super Administrator', email: 'rithikgroupofcompanies@gmail.com', created_at: new Date().toISOString() },
+    { id: 2, action: 'school.approved_and_provisioned', actor: 'Super Administrator', email: 'rithikgroupofcompanies@gmail.com', created_at: new Date().toISOString() },
   ]
 };
 
@@ -286,6 +286,27 @@ const server = http.createServer((req, res) => {
         dispatched_count: updatedStudents.length,
         term: term,
         students: updatedStudents
+      });
+    }
+
+    // 7b. DISPATCH PARENT WHATSAPP DIGEST & REPORT
+    if (pathname === '/api/v1/academics/send-whatsapp-reports' && req.method === 'POST') {
+      const { student_id, parent_phone, term } = parsedBody || {};
+      const student = DB.students.find(s => s.id === Number(student_id));
+
+      DB.audit_logs.unshift({
+        id: DB.audit_logs.length + 1,
+        action: 'academics.parent_whatsapp_dispatched',
+        actor: 'Academic Office',
+        email: parent_phone || 'WhatsApp Gateway',
+        created_at: new Date().toISOString()
+      });
+
+      return sendJSON(200, {
+        success: true,
+        message: `WhatsApp academic summary queued and dispatched to ${parent_phone || 'Parent'}.`,
+        student: student || null,
+        term: term || 'Current Term'
       });
     }
 
